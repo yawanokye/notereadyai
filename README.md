@@ -86,3 +86,25 @@ The backend uses the OpenAI Responses API through `client.responses.create(...)`
 ## Suggested project boundaries
 
 NoteReady AI should support lecturers and students in preparing editable learning materials. It should not present generated notes as a substitute for lecturer review or the original source. Important facts, citations, calculations and policy statements should be checked before use.
+
+## Render deployment requirements
+
+This project pins Python 3.12.11 in `.python-version` and `render.yaml`. Keep the Python pin in the repository root. Render's newer default Python runtime can otherwise try to compile older `pydantic-core` packages from source.
+
+Use these commands:
+
+```bash
+python -m pip install --upgrade pip setuptools wheel && python -m pip install -r requirements.txt
+```
+
+```bash
+uvicorn app.main:app --host 0.0.0.0 --port $PORT
+```
+
+Required production environment variable:
+
+```text
+DEEPSEEK_API_KEY=your_real_key
+```
+
+The default model and endpoint are already configured as `deepseek-v4-pro` and `https://api.deepseek.com`.
