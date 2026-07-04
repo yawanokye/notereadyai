@@ -1,0 +1,149 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>NoteReady AI</title>
+  <meta name="description" content="Turn course outlines and documents into source-grounded lecture notes, summaries and study resources.">
+  <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+  <header class="site-header">
+    <a class="brand" href="/">NoteReady <span>AI</span></a>
+    <div class="header-tag">Teach better. Study smarter.</div>
+  </header>
+
+  <main class="shell">
+    <section class="hero">
+      <div>
+        <p class="eyebrow">Academic notes and teaching workspace</p>
+        <h1>Turn a detailed course outline into structured, level-appropriate lecture notes.</h1>
+        <p class="lead">Upload a PDF, Word document, PowerPoint or text file. NoteReady AI follows the source, matches the academic level and prepares editable teaching or study materials.</p>
+      </div>
+      <div class="hero-card">
+        <strong>Initial version</strong>
+        <span>Lecture notes</span>
+        <span>Document summaries</span>
+        <span>DOCX export</span>
+        <span>Source-grounded instructions</span>
+      </div>
+    </section>
+
+    <nav class="tabs" aria-label="Workspace modes">
+      <button class="tab active" data-target="lecture-panel">Lecture Notes</button>
+      <button class="tab" data-target="summary-panel">Summarise Notes</button>
+    </nav>
+
+    <section id="lecture-panel" class="workspace panel active">
+      <form id="lecture-form" class="form-card">
+        <div class="form-heading">
+          <div>
+            <p class="eyebrow">Course outline to lecture notes</p>
+            <h2>Prepare lecture notes</h2>
+          </div>
+          <span class="step-badge">MVP 0.1</span>
+        </div>
+
+        <label class="upload-box">
+          <input name="file" type="file" accept=".pdf,.docx,.pptx,.txt,.md" required>
+          <span class="upload-title">Upload detailed course outline</span>
+          <small>PDF, DOCX, PPTX, TXT or Markdown</small>
+        </label>
+
+        <div class="grid two">
+          <label>Course title<input name="course_title" placeholder="Principles of Procurement"></label>
+          <label>Course code<input name="course_code" placeholder="PCM 102"></label>
+        </div>
+
+        <div class="grid two">
+          <label>Academic level
+            <select name="academic_level" required>
+              <option value="Senior high school">Senior high school</option>
+              <option value="Certificate or diploma">Certificate or diploma</option>
+              <option value="Undergraduate Level 100" selected>Undergraduate Level 100</option>
+              <option value="Undergraduate Level 200">Undergraduate Level 200</option>
+              <option value="Undergraduate Level 300">Undergraduate Level 300</option>
+              <option value="Undergraduate Level 400">Undergraduate Level 400</option>
+              <option value="Postgraduate diploma">Postgraduate diploma</option>
+              <option value="Non-research master's">Non-research master's</option>
+              <option value="Research master's or MPhil">Research master's or MPhil</option>
+              <option value="Professional doctorate">Professional doctorate</option>
+              <option value="PhD">PhD</option>
+            </select>
+          </label>
+          <label>Citation style
+            <select name="citation_style">
+              <option>APA 7th edition</option>
+              <option>Harvard</option>
+              <option>Chicago author-date</option>
+              <option>IEEE</option>
+              <option>Vancouver</option>
+            </select>
+          </label>
+        </div>
+
+        <div class="grid three">
+          <label>Credit hours<input name="credit_hours" type="number" value="3" min="1" max="12"></label>
+          <label>Teaching weeks<input name="teaching_weeks" type="number" value="13" min="1" max="52"></label>
+          <label>Contact hours/week<input name="contact_hours_per_week" type="number" value="3" min="0.5" max="30" step="0.5"></label>
+        </div>
+
+        <label>Context preference
+          <textarea name="context_preference" rows="3">Use Ghanaian and African examples where relevant, alongside international examples.</textarea>
+        </label>
+
+        <button class="primary" type="submit">Generate lecture notes</button>
+      </form>
+    </section>
+
+    <section id="summary-panel" class="workspace panel">
+      <form id="summary-form" class="form-card">
+        <div class="form-heading">
+          <div>
+            <p class="eyebrow">Document to structured summary</p>
+            <h2>Summarise notes or documents</h2>
+          </div>
+        </div>
+
+        <label class="upload-box">
+          <input name="file" type="file" accept=".pdf,.docx,.pptx,.txt,.md" required>
+          <span class="upload-title">Upload source material</span>
+          <small>PDF, DOCX, PPTX, TXT or Markdown</small>
+        </label>
+
+        <div class="grid two">
+          <label>Output title<input name="title" placeholder="Optional"></label>
+          <label>Summary mode
+            <select name="mode">
+              <option>Concise summary</option>
+              <option selected>Detailed summary</option>
+              <option>Academic paper summary</option>
+              <option>Executive summary</option>
+              <option>Meeting minutes and action items</option>
+              <option>Revision notes</option>
+            </select>
+          </label>
+        </div>
+
+        <button class="primary" type="submit">Generate summary</button>
+      </form>
+    </section>
+
+    <section id="output-section" class="output-card hidden" aria-live="polite">
+      <div class="output-header">
+        <div>
+          <p class="eyebrow">Generated output</p>
+          <h2 id="output-title">Output</h2>
+          <p id="output-meta" class="muted"></p>
+        </div>
+        <button id="download-docx" class="secondary" type="button">Download DOCX</button>
+      </div>
+      <div id="warning" class="warning hidden"></div>
+      <pre id="output-content"></pre>
+    </section>
+  </main>
+
+  <footer>NoteReady AI · Source-grounded educational workspace</footer>
+  <script src="/static/app.js"></script>
+</body>
+</html>
