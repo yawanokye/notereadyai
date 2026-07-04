@@ -6,14 +6,17 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 class Settings(BaseSettings):
     app_name: str = "NoteReady AI"
-    app_version: str = "0.1.1"
+    app_version: str = "0.2.0"
     environment: str = "development"
 
     deepseek_api_key: str | None = None
     deepseek_model: str = "deepseek-v4-pro"
     deepseek_base_url: str = "https://api.deepseek.com"
 
-    max_extracted_chars: int = 160_000
+    max_extracted_chars: int = 200_000
+    lecture_batch_max_tokens: int = 7_500
+    assessment_max_tokens: int = 3_000
+    summary_max_tokens: int = 7_000
     generated_files_dir: Path = Path("generated")
 
     model_config = SettingsConfigDict(
@@ -32,4 +35,5 @@ class Settings(BaseSettings):
 def get_settings() -> Settings:
     settings = Settings()
     settings.generated_files_dir.mkdir(parents=True, exist_ok=True)
+    (settings.generated_files_dir / "jobs").mkdir(parents=True, exist_ok=True)
     return settings

@@ -26,9 +26,54 @@ class SummaryMode(str, Enum):
     revision = "Revision notes"
 
 
+class CourseModule(BaseModel):
+    id: str
+    sequence: int
+    title: str
+
+
+class LectureJobResponse(BaseModel):
+    job_id: str
+    title: str
+    source_filename: str
+    extracted_characters: int
+    extraction_warning: str | None = None
+    modules: list[CourseModule]
+    ai_enabled: bool
+
+
+class ObjectiveQuestion(BaseModel):
+    id: str
+    question: str
+    options: list[str] = Field(min_length=2, max_length=6)
+    correct_index: int = Field(ge=0)
+    explanation: str
+
+
+class EssayQuestion(BaseModel):
+    id: str
+    question: str
+    marking_points: list[str]
+
+
+class LectureBatchResponse(BaseModel):
+    job_id: str
+    module_id: str
+    sequence: int
+    total_modules: int
+    title: str
+    content_markdown: str
+    content_html: str
+    objective_questions: list[ObjectiveQuestion]
+    essay_questions: list[EssayQuestion]
+    assessment_warning: str | None = None
+    cached: bool = False
+
+
 class GenerateResponse(BaseModel):
     title: str
     content_markdown: str
+    content_html: str
     source_filename: str
     extracted_characters: int
     extraction_warning: str | None = None
