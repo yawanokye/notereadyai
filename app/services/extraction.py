@@ -1,9 +1,15 @@
 from dataclasses import dataclass
 from io import BytesIO
 from pathlib import Path
+from typing import Iterator
 
 import fitz
 from docx import Document
+from docx.document import Document as _Document
+from docx.oxml.table import CT_Tbl
+from docx.oxml.text.paragraph import CT_P
+from docx.table import Table
+from docx.text.paragraph import Paragraph
 from fastapi import UploadFile
 from pptx import Presentation
 
@@ -34,33 +40,96 @@ def _clean_text(text: str) -> str:
 
 def _extract_pdf(data: bytes) -> str:
     document = fitz.open(stream=data, filetype="pdf")
-    pages = [page.get_text("text") for page in document]
+    pages = []
+    for page_number, page in enumerate(document, start=1):
+        text = page.get_text("text").strip()
+        if text:
+            pages.append(f"## Page {page_number}\n\n{text}")
     return "\n\n".join(pages)
+
+
+def _iter_docx_blocks(document: _Document) -> Iterator[Paragraph | Table]:
+    for child in document.element.body.iterchildren():
+        if isinstance(child, CT_P):
+            yield Paragraph(child, document)
+        elif isinstance(child, CT_Tbl):
+            yield Table(child, document)
+
+
+def _escape_cell(value: str) -> str:
+    return " ".join(value.replace("|", "\\|").split())
+
+
+def _table_to_markdown(table: Table) -> str:
+    rows = [[_escape_cell(cell.text) for cell in row.cells] for row in table.rows]
+    rows = [row for row in rows if any(row)]
+    if not rows:
+        return ""
+    width = max(len(row) for row in rows)
+    normalised = [row + [""] * (width - len(row)) for row in rows]
+    header = normalised[0]
+    separator = ["---"] * width
+    lines = [
+        "| " + " | ".join(header) + " |",
+        "| " + " | ".join(separator) + " |",
+    ]
+    lines.extend("| " + " | ".join(row) + " |" for row in normalised[1:])
+    return "\n".join(lines)
 
 
 def _extract_docx(data: bytes) -> str:
     document = Document(BytesIO(data))
     parts: list[str] = []
-    for paragraph in document.paragraphs:
-        if paragraph.text.strip():
-            parts.append(paragraph.text)
-    for table in document.tables:
-        for row in table.rows:
-            values = [cell.text.strip() for cell in row.cells]
-            if any(values):
-                parts.append(" | ".join(values))
-    return "\n".join(parts)
+    for block in _iter_docx_blocks(document):
+        if isinstance(block, Paragraph):
+            text = block.text.strip()
+            if not text:
+                continue
+            style = (block.style.name or "").lower()
+            if style.startswith("heading"):
+                try:
+                    level = min(4, max(1, int(style.split()[-1])))
+                except (ValueError, IndexError):
+                    level = 2
+                parts.append(f"{'#' * level} {text}")
+            elif "list bullet" in style:
+                parts.append(f"- {text}")
+            elif "list number" in style:
+                parts.append(f"1. {text}")
+            else:
+                parts.append(text)
+        else:
+            markdown_table = _table_to_markdown(block)
+            if markdown_table:
+                parts.append(markdown_table)
+    return "\n\n".join(parts)
 
 
 def _extract_pptx(data: bytes) -> str:
     presentation = Presentation(BytesIO(data))
     slides: list[str] = []
     for index, slide in enumerate(presentation.slides, start=1):
-        items: list[str] = [f"Slide {index}"]
+        items: list[str] = []
+        title_shape = slide.shapes.title
+        if title_shape is not None and title_shape.text.strip():
+            items.append(f"## {title_shape.text.strip()}")
+        else:
+            items.append(f"## Slide {index}")
         for shape in slide.shapes:
-            if hasattr(shape, "text") and shape.text.strip():
+            if shape is title_shape:
+                continue
+            if getattr(shape, "has_table", False):
+                table = shape.table
+                rows = [[_escape_cell(cell.text) for cell in row.cells] for row in table.rows]
+                if rows:
+                    width = max(len(row) for row in rows)
+                    rows = [row + [""] * (width - len(row)) for row in rows]
+                    items.append("| " + " | ".join(rows[0]) + " |")
+                    items.append("| " + " | ".join(["---"] * width) + " |")
+                    items.extend("| " + " | ".join(row) + " |" for row in rows[1:])
+            elif hasattr(shape, "text") and shape.text.strip():
                 items.append(shape.text.strip())
-        slides.append("\n".join(items))
+        slides.append("\n\n".join(items))
     return "\n\n".join(slides)
 
 
@@ -88,7 +157,7 @@ async def extract_upload(upload: UploadFile, max_chars: int) -> ExtractionResult
     if not text:
         raise ValueError(
             "No readable text was extracted. The file may contain scanned pages. "
-            "OCR support belongs in the next development phase."
+            "OCR support is not yet enabled."
         )
 
     original_count = len(text)
@@ -96,9 +165,9 @@ async def extract_upload(upload: UploadFile, max_chars: int) -> ExtractionResult
     if original_count > max_chars:
         text = text[:max_chars]
         warning = (
-            f"The file contained {original_count:,} characters. Only the first "
-            f"{max_chars:,} characters were processed. Increase MAX_EXTRACTED_CHARS "
-            "or add chunked processing before production use."
+            f"The source contained {original_count:,} characters. The first "
+            f"{max_chars:,} characters were processed. Split very large source files "
+            "or increase MAX_EXTRACTED_CHARS."
         )
 
     return ExtractionResult(text=text, character_count=len(text), warning=warning)
