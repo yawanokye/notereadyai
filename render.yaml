@@ -18,6 +18,12 @@ services:
       - key: DEEPSEEK_BASE_URL
         value: https://api.deepseek.com
       - key: MAX_EXTRACTED_CHARS
-        value: 160000
+        value: 200000
+      - key: LECTURE_BATCH_MAX_TOKENS
+        value: 7500
+      - key: ASSESSMENT_MAX_TOKENS
+        value: 3000
+      - key: SUMMARY_MAX_TOKENS
+        value: 7000
       - key: GENERATED_FILES_DIR
         value: generated

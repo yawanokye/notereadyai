@@ -1,110 +1,127 @@
-# NoteReady AI Starter
+# NoteReady AI 0.2
 
-NoteReady AI is a source-grounded educational workspace. This starter implements the first two workflows:
+NoteReady AI converts course outlines and source documents into web-readable lecture notes, interactive practice questions and polished DOCX files.
 
-1. Generate level-sensitive lecture notes from a detailed course outline.
-2. Summarise uploaded notes, papers, slides and other text-based documents.
+## Main improvements in version 0.2
 
-It also exports generated content to DOCX.
+- Generates lecture notes one course unit at a time instead of one oversized request.
+- Shows completed units immediately while later units continue generating.
+- Provides a full-screen reading workspace with unit navigation and adjustable text size.
+- Renders Markdown as real web headings, lists and responsive tables.
+- Generates 10 objective questions and 3 essay questions for each lecture unit.
+- Provides an interactive objective-test practice area with scores, correct answers and explanations.
+- Provides revealable essay marking guides.
+- Exports real Word headings, bold text, lists, tables, page numbers, a cover and a contents page.
+- Preserves the order of paragraphs and tables when extracting DOCX files.
+- Preserves slide titles and tables when extracting PPTX files.
 
-## Supported files in version 0.1
+## Project structure
 
-- PDF with extractable text
-- DOCX
-- PPTX
-- TXT
-- Markdown
-
-Scanned PDFs and image-only documents need OCR, which is intentionally left for the next phase.
+```text
+app/
+  main.py
+  config.py
+  schemas.py
+  routers/generation.py
+  services/
+    ai.py
+    export_docx.py
+    extraction.py
+    jobs.py
+    markdown_render.py
+    outline.py
+    prompts.py
+  static/
+    index.html
+    styles.css
+    app.js
+tests/
+requirements.txt
+render.yaml
+.python-version
+```
 
 ## Local setup
 
 ```bash
 python -m venv .venv
+```
+
+Windows:
+
+```bash
+.venv\Scripts\activate
+```
+
+macOS or Linux:
+
+```bash
 source .venv/bin/activate
-# Windows: .venv\Scripts\activate
-pip install -r requirements.txt
-cp .env.example .env
+```
+
+Install dependencies:
+
+```bash
+python -m pip install --upgrade pip setuptools wheel
+python -m pip install -r requirements.txt
+```
+
+Copy `.env.example` to `.env`, then add the DeepSeek key.
+
+```env
+DEEPSEEK_API_KEY=your_actual_key
+DEEPSEEK_MODEL=deepseek-v4-pro
+DEEPSEEK_BASE_URL=https://api.deepseek.com
+```
+
+Run:
+
+```bash
 uvicorn app.main:app --reload
 ```
 
-Open `http://127.0.0.1:8000`.
+## Render deployment
 
-## AI configuration
+When the repository contains `app`, `requirements.txt` and `render.yaml` at its top level, leave **Root Directory blank**.
 
-Set both variables in `.env` or Render:
-
-```text
-OPENAI_API_KEY=your_server_side_key
-OPENAI_MODEL=a_model_available_to_your_account
-```
-
-Without these variables, the app runs in development-preview mode. Upload, extraction, form handling and DOCX export remain testable, but no full AI output is generated.
-
-The backend uses the OpenAI Responses API through `client.responses.create(...)`, which is the current general interface for text generation in the official OpenAI API documentation.
-
-## Important safeguards already included
-
-- No silent truncation. Long uploads return a visible extraction warning.
-- No invented sources, statistics, authors or publication details in the generation instructions.
-- Missing evidence is marked for lecturer input.
-- Academic depth changes with the selected level.
-- Course weeks, credit hours and contact hours are included in the lecture-note plan.
-- Ghanaian and African examples are requested where relevant.
-- The API key stays on the server.
-
-## Recommended next build phases
-
-### Phase 2: complete lecture-note production
-
-- Parse the course outline into a confirmed topic map before generation.
-- Generate one topic or teaching week at a time to protect completeness.
-- Add project saving, regeneration and revision.
-- Add editable rich-text preview.
-- Add lecturer-only notes and student-facing notes as separate outputs.
-- Add PowerPoint-ready lecture outlines.
-- Add quizzes, assignments and marking schemes.
-- Add references supplied by the lecturer as a separate source collection.
-
-### Phase 3: long jobs and richer inputs
-
-- PostgreSQL projects and users.
-- Redis-backed job queue.
-- Render background worker for long documents and audio.
-- Object storage for uploads and exports.
-- OCR for scanned notes and handwriting.
-- Audio transcription with timestamps and speaker separation.
-- Mind maps and flashcards.
-
-### Phase 4: commercialisation
-
-- Authentication and account dashboard.
-- Usage entitlements by pages, audio minutes or course-note projects.
-- Paystack and Stripe with NoteReady-specific product metadata and reference prefixes.
-- Admin dashboard, audit logs and institutional plans.
-
-## Suggested project boundaries
-
-NoteReady AI should support lecturers and students in preparing editable learning materials. It should not present generated notes as a substitute for lecturer review or the original source. Important facts, citations, calculations and policy statements should be checked before use.
-
-## Render deployment requirements
-
-This project pins Python 3.12.11 in `.python-version` and `render.yaml`. Keep the Python pin in the repository root. Render's newer default Python runtime can otherwise try to compile older `pydantic-core` packages from source.
-
-Use these commands:
+Build command:
 
 ```bash
 python -m pip install --upgrade pip setuptools wheel && python -m pip install -r requirements.txt
 ```
 
+Start command:
+
 ```bash
 uvicorn app.main:app --host 0.0.0.0 --port $PORT
 ```
 
-Required production environment variable:
+Required environment variables:
 
-```text
-DEEPSEEK_API_KEY=your_real_key
+```env
+PYTHON_VERSION=3.12.11
+ENVIRONMENT=production
+DEEPSEEK_API_KEY=your_actual_key
+DEEPSEEK_MODEL=deepseek-v4-pro
+DEEPSEEK_BASE_URL=https://api.deepseek.com
+MAX_EXTRACTED_CHARS=200000
+LECTURE_BATCH_MAX_TOKENS=7500
+ASSESSMENT_MAX_TOKENS=3000
+SUMMARY_MAX_TOKENS=7000
+GENERATED_FILES_DIR=generated
 ```
 
-The default model and endpoint are already configured as `deepseek-v4-pro` and `https://api.deepseek.com`.
+After replacing an earlier deployment, use **Manual Deploy → Clear build cache & deploy**.
+
+## API flow
+
+1. `POST /api/lecture-notes/jobs` extracts the outline and identifies course units.
+2. `POST /api/lecture-notes/jobs/{job_id}/batches/{module_id}` generates one lecture unit and its practice assessment.
+3. `POST /api/exports/docx` exports the assembled Markdown as a formatted Word document.
+4. `POST /api/summaries/generate` creates a rich web and DOCX-ready summary.
+
+## Tests
+
+```bash
+pytest -q
+```
