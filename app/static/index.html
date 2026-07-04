@@ -4,8 +4,9 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>NoteReady AI</title>
-  <meta name="description" content="Turn course outlines and documents into source-grounded lecture notes, summaries and study resources.">
-  <link rel="stylesheet" href="/static/styles.css">
+  <meta name="description" content="Generate source-grounded lecture notes, readable online units, practice tests and polished DOCX files.">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect width=%22100%22 height=%22100%22 rx=%2220%22 fill=%22%233f51b5%22/><text x=%2250%22 y=%2265%22 text-anchor=%22middle%22 font-size=%2255%22 fill=%22white%22>N</text></svg>">
+  <link rel="stylesheet" href="/static/styles.css?v=20260704-02">
 </head>
 <body>
   <header class="site-header">
@@ -16,32 +17,33 @@
   <main class="shell">
     <section class="hero">
       <div>
-        <p class="eyebrow">Academic notes and teaching workspace</p>
-        <h1>Turn a detailed course outline into structured, level-appropriate lecture notes.</h1>
-        <p class="lead">Upload a PDF, Word document, PowerPoint or text file. NoteReady AI follows the source, matches the academic level and prepares editable teaching or study materials.</p>
+        <p class="eyebrow">Academic teaching and study workspace</p>
+        <h1>Lecture notes designed for the screen, the classroom and Word.</h1>
+        <p class="lead">Upload a detailed course outline. NoteReady AI prepares one focused unit at a time, displays it in a full-screen reader, creates objective and essay review questions, and exports the complete course as a properly formatted DOCX file.</p>
       </div>
       <div class="hero-card">
-        <strong>Initial version</strong>
-        <span>Lecture notes</span>
-        <span>Document summaries</span>
-        <span>DOCX export</span>
-        <span>Source-grounded instructions</span>
+        <strong>NoteReady AI 0.2</strong>
+        <span>Unit-by-unit generation</span>
+        <span>Full-screen web reader</span>
+        <span>Interactive objective tests</span>
+        <span>Formatted tables and DOCX</span>
       </div>
     </section>
 
     <nav class="tabs" aria-label="Workspace modes">
-      <button class="tab active" data-target="lecture-panel">Lecture Notes</button>
-      <button class="tab" data-target="summary-panel">Summarise Notes</button>
+      <button class="tab active" data-target="lecture-panel" type="button">Lecture Notes</button>
+      <button class="tab" data-target="summary-panel" type="button">Summarise Notes</button>
     </nav>
 
     <section id="lecture-panel" class="workspace panel active">
       <form id="lecture-form" class="form-card">
         <div class="form-heading">
           <div>
-            <p class="eyebrow">Course outline to lecture notes</p>
-            <h2>Prepare lecture notes</h2>
+            <p class="eyebrow">Course outline to complete teaching material</p>
+            <h2>Prepare lecture notes in readable batches</h2>
+            <p class="muted compact">Each identified week or unit is generated separately. Completed units become available immediately while the remaining units continue.</p>
           </div>
-          <span class="step-badge">MVP 0.1</span>
+          <span class="step-badge">Version 0.2</span>
         </div>
 
         <label class="upload-box">
@@ -51,8 +53,8 @@
         </label>
 
         <div class="grid two">
-          <label>Course title<input name="course_title" placeholder="Principles of Procurement"></label>
-          <label>Course code<input name="course_code" placeholder="PCM 102"></label>
+          <label>Course title<input name="course_title" placeholder="Operations Management"></label>
+          <label>Course code<input name="course_code" placeholder="SBU 301"></label>
         </div>
 
         <div class="grid two">
@@ -92,7 +94,7 @@
           <textarea name="context_preference" rows="3">Use Ghanaian and African examples where relevant, alongside international examples.</textarea>
         </label>
 
-        <button class="primary" type="submit">Generate lecture notes</button>
+        <button class="primary" type="submit">Prepare course batches</button>
       </form>
     </section>
 
@@ -102,6 +104,7 @@
           <div>
             <p class="eyebrow">Document to structured summary</p>
             <h2>Summarise notes or documents</h2>
+            <p class="muted compact">The result is displayed in the same clean reader and exported with genuine Word headings and tables.</p>
           </div>
         </div>
 
@@ -129,21 +132,66 @@
       </form>
     </section>
 
-    <section id="output-section" class="output-card hidden" aria-live="polite">
-      <div class="output-header">
-        <div>
-          <p class="eyebrow">Generated output</p>
-          <h2 id="output-title">Output</h2>
-          <p id="output-meta" class="muted"></p>
+    <section id="output-section" class="reader-shell hidden" aria-live="polite">
+      <header class="reader-toolbar">
+        <div class="reader-title-block">
+          <p class="eyebrow">Reading workspace</p>
+          <h2 id="output-title">Generated material</h2>
+          <p id="output-meta" class="muted compact"></p>
         </div>
-        <button id="download-docx" class="secondary" type="button">Download DOCX</button>
-      </div>
+        <div class="toolbar-actions">
+          <button id="font-down" class="icon-button" type="button" aria-label="Reduce text size">A−</button>
+          <button id="font-up" class="icon-button" type="button" aria-label="Increase text size">A+</button>
+          <button id="fullscreen-button" class="secondary ghost" type="button">Full screen</button>
+          <button id="download-docx" class="secondary" type="button">Download DOCX</button>
+        </div>
+      </header>
+
       <div id="warning" class="warning hidden"></div>
-      <pre id="output-content"></pre>
+      <div id="generation-status" class="generation-status hidden">
+        <div class="status-row">
+          <strong id="status-text">Preparing course units…</strong>
+          <span id="status-count">0%</span>
+        </div>
+        <div class="progress-track"><div id="progress-bar" class="progress-bar"></div></div>
+      </div>
+
+      <div class="reader-layout">
+        <aside class="unit-sidebar" aria-label="Course units">
+          <div class="sidebar-heading">Course units</div>
+          <div id="unit-list" class="unit-list"></div>
+          <label id="answer-key-option" class="answer-key-option hidden">
+            <input id="include-answer-key" type="checkbox">
+            Include answer key in DOCX
+          </label>
+        </aside>
+
+        <div class="reading-area">
+          <nav class="reader-tabs" aria-label="Reading and practice views">
+            <button id="notes-tab" class="reader-tab active" type="button">Read notes</button>
+            <button id="practice-tab" class="reader-tab" type="button">Practice questions</button>
+          </nav>
+
+          <section id="notes-view" class="reader-view active">
+            <div id="unit-status" class="unit-status hidden"></div>
+            <article id="output-content" class="reader-body"></article>
+            <div class="unit-navigation">
+              <button id="previous-unit" class="secondary ghost" type="button">Previous unit</button>
+              <span id="unit-position" class="muted"></span>
+              <button id="next-unit" class="secondary ghost" type="button">Next unit</button>
+            </div>
+          </section>
+
+          <section id="practice-view" class="reader-view">
+            <div id="practice-content" class="practice-content"></div>
+          </section>
+        </div>
+      </div>
     </section>
   </main>
 
+  <div id="toast" class="toast hidden" role="status"></div>
   <footer>NoteReady AI · Source-grounded educational workspace</footer>
-  <script src="/static/app.js"></script>
+  <script src="/static/app.js?v=20260704-02"></script>
 </body>
 </html>
